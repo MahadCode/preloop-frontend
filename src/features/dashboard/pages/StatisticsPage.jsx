@@ -1,113 +1,97 @@
-import { useEffect, useState } from "react";
+import { getStatistics } from "../../../api/progress";
+import { useAsync } from "../../../lib/useAsync";
+import { difficultyLabel, formatPercent } from "../../../lib/format";
+import PageHeader from "../../../components/ui/PageHeader";
+import ErrorState from "../../../components/ui/ErrorState";
+import EmptyState from "../../../components/ui/EmptyState";
+import { PageSkeleton } from "../../../components/ui/Skeleton";
 
-import StatisticsOverview from "../components/StatisticsOverview";
-import DifficultyBreakdown from "../components/DifficultyBreakdown";
-import TopicBreakdown from "../components/TopicBreakdown";
-import CompanyBreakdown from "../components/CompanyBreakdown";
-import StatisticsSkeleton from "../components/StatisticsSkeleton";
-import { getPreparationStatistics } from "../api/dashboardService";
-
-const StatisticsPage = () => {
-  const [statistics, setStatistics] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchStatistics = async () => {
-    try {
-      setLoading(true);
-      
-      const response = await getPreparationStatistics()
-      
-      setStatistics(response.data)
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchStatistics();
-  }, []);
-
-  if (loading) {
-    return <StatisticsSkeleton />;
-  }
-
-  if (!statistics) {
-    return (
-      <div className="min-h-screen bg-gray-50 px-4 py-8">
-        <div className="mx-auto max-w-6xl">
-          <div className="rounded-xl border border-gray-200 bg-white px-6 py-12 text-center">
-
-            <h2 className="text-sm font-semibold text-gray-900">
-              Unable to load statistics
-            </h2>
-
-            <p className="mt-1 text-sm text-gray-500">
-              Something went wrong while loading your statistics.
-            </p>
-
-            <button
-              type="button"
-              onClick={fetchStatistics}
-              className="mt-4 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
-            >
-              Try Again
-            </button>
-
-          </div>
-        </div>
-      </div>
-    );
-  }
+export default function StatisticsPage() {
+  const state = useAsync(() => getStatistics(), []);
+  if (state.loading) return <PageSkeleton />;
+  if (state.error) return <ErrorState error={state.error} onRetry={state.reload} />;
+  const stats = state.data;
+  const total = Number(stats.total_question) || 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8">
-      <div className="mx-auto max-w-6xl">
-
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Statistics
-          </h1>
-
-          <p className="mt-1 text-sm text-gray-500">
-            Track your preparation progress and see where you've been practicing.
-          </p>
-        </div>
-
-        {/* Summary */}
-        <StatisticsOverview
-          totalSolved={statistics.total_solved}
-          difficultyBreakdown={
-            statistics.difficulty_breakdown
-          }
+    <div>
+      <PageHeader
+        eyebrow="Preparation"
+        title="Statistics"
+        description="Published questions grouped by difficulty, topic, and company."
+      />
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Summary label="Published" value={total} />
+        <Summary label="Solved" value={stats.total_solved ?? 0} />
+        <Summary label="Attempted" value={stats.total_attempted ?? 0} />
+        <Summary label="Unsolved" value={stats.total_unsolved ?? 0} />
+      </div>
+      <div className="mt-10 grid gap-10">
+        <Breakdown
+          title="Difficulty"
+          rows={(stats.difficulty_breakdown || []).map((row) => ({
+            key: row.difficulty,
+            label: difficultyLabel(row.difficulty),
+            solved: row.solved,
+            total: row.total,
+          }))}
         />
-
-        {/* Difficulty */}
-        <div className="mt-6">
-          <DifficultyBreakdown
-            data={statistics.difficulty_breakdown}
-          />
-        </div>
-
-        {/* Topic + Company */}
-        <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        
-            <CompanyBreakdown
-                data={statistics.company_breakdown}
-            />
-
-            <TopicBreakdown
-                data={statistics.topic_breakdown}
-            />
-
-
-        </div>
-
+        <Breakdown
+          title="Topics"
+          rows={(stats.topic_breakdown || []).filter((row) => row.tag_id).map((row) => ({
+            key: row.tag_id,
+            label: row.tag_name || "Untitled topic",
+            solved: row.solved,
+            total: row.total,
+          }))}
+        />
+        <Breakdown
+          title="Companies"
+          rows={(stats.company_breakdown || []).filter((row) => row.company_id).map((row) => ({
+            key: row.company_id,
+            label: row.company_name || "Untitled company",
+            solved: row.solved,
+            total: row.total,
+          }))}
+        />
       </div>
     </div>
   );
-};
+}
 
-export default StatisticsPage;
+function Breakdown({ title, rows }) {
+  return (
+    <section>
+      <h2 className="text-[28px] font-light tracking-tight text-ink">{title}</h2>
+      {rows.length === 0 ? (
+        <div className="mt-4"><EmptyState title="No breakdown yet" body="This group is empty in the statistics response." /></div>
+      ) : (
+        <ul className="mt-4 space-y-3">
+          {rows.map((row) => {
+            const width = row.total ? Math.min(100, Math.round((row.solved / row.total) * 100)) : 0;
+            return (
+              <li key={row.key} className="rounded-2xl bg-canvas px-5 py-4 shadow-sm">
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-ink">{row.label}</span>
+                  <span className="font-mono text-xs text-smoke">{row.solved}/{row.total} · {formatPercent(width)}</span>
+                </div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-stone">
+                  <div className="h-full bg-ink" style={{ width: `${width}%` }} />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function Summary({ label, value }) {
+  return (
+    <div className="rounded-2xl bg-taupe p-5 shadow-sm">
+      <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-smoke">{label}</p>
+      <p className="mt-3 text-4xl font-light tracking-tight text-ink">{value}</p>
+    </div>
+  );
+}

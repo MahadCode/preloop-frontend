@@ -1,1 +1,145 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-canvas: #fdfcfc;
+  --color-taupe: #f5f3f1;
+  --color-stone: #ebe8e4;
+  --color-ink: #000000;
+  --color-graphite: #44403b;
+  --color-smoke: #777169;
+  --color-ash: #a59f97;
+  --color-violet: #0447ff;
+  --color-ember: #ff4704;
+  --color-danger: #ba1a1a;
+  --color-danger-soft: #ffdad6;
+  --color-paper: #ffffff;
+
+  --radius-card: 1.25rem;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #faf9f9;
+  color: var(--color-graphite);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: #000;
+  color: #fff;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.prose-prep {
+  color: var(--color-graphite);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.prose-prep > *:first-child {
+  margin-top: 0;
+}
+
+.prose-prep > *:last-child {
+  margin-bottom: 0;
+}
+
+.prose-prep h1,
+.prose-prep h2,
+.prose-prep h3,
+.prose-prep h4 {
+  color: var(--color-ink);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  margin: 1.4em 0 0.5em;
+}
+
+.prose-prep h1 { font-size: 1.75rem; }
+.prose-prep h2 { font-size: 1.4rem; }
+.prose-prep h3 { font-size: 1.15rem; }
+
+.prose-prep p,
+.prose-prep ul,
+.prose-prep ol,
+.prose-prep pre,
+.prose-prep blockquote {
+  margin: 0.8em 0;
+}
+
+.prose-prep ul,
+.prose-prep ol {
+  padding-left: 1.25rem;
+}
+
+.prose-prep ul { list-style: disc; }
+.prose-prep ol { list-style: decimal; }
+
+.prose-prep a {
+  color: var(--color-violet);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prose-prep code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--color-taupe);
+  border-radius: 0.25rem;
+  padding: 0.1em 0.35em;
+}
+
+.prose-prep pre {
+  background: #1b1b1b;
+  color: #f4f3f3;
+  border-radius: 0.75rem;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+}
+
+.prose-prep pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+.prose-prep blockquote {
+  border-left: 2px solid var(--color-stone);
+  padding-left: 1rem;
+  color: var(--color-smoke);
+}
+
+.prose-prep img {
+  max-width: 100%;
+  border-radius: 0.75rem;
+}
+
+.prose-prep table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92em;
+}
+
+.prose-prep th,
+.prose-prep td {
+  border-bottom: 1px solid var(--color-stone);
+  padding: 0.5rem 0.4rem;
+  text-align: left;
+}

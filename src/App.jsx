@@ -1,52 +1,52 @@
 import { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
 import { Outlet } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { setUnauthorizedHandler } from "./api/client";
+import { ensureCsrf, getCurrentUser } from "./api/auth";
 import { login, logout } from "./features/auth/authSlice";
-import { getCurrentUser, getCsrfCookie } from "./features/auth/api/auth.js";
-import Header from "./components/Header.jsx";
-import Footer from "./components/Footer.jsx";
+import store from "./store/store";
+import { ToastProvider } from "./components/ui/Toast";
 
-function App() {
-  const [loading, setLoading] = useState(true);
+export default function App() {
   const dispatch = useDispatch();
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const initializeAuth = async () => {
+    setUnauthorizedHandler(() => {
+      const wasAuthenticated = store.getState().auth.status;
+      store.dispatch(logout());
+      if (wasAuthenticated && !window.location.pathname.startsWith("/login")) {
+        const next = `${window.location.pathname}${window.location.search}`;
+        window.location.assign(`/login?next=${encodeURIComponent(next)}`);
+      }
+    });
+
+    const boot = async () => {
       try {
-        await getCsrfCookie();
-
-        const response = await getCurrentUser();
-
-        dispatch(
-          login({
-            userData: response.data,
-          }),
-        );
-      } catch (error) {
+        await ensureCsrf();
+        const userData = await getCurrentUser({ skipAuthRedirect: true });
+        dispatch(login({ userData }));
+      } catch {
         dispatch(logout());
       } finally {
-        setLoading(false);
+        setReady(true);
       }
     };
 
-    initializeAuth();
+    boot();
   }, [dispatch]);
 
-  if (loading) {
-    return <div>Loading...</div>;
+  if (!ready) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-canvas">
+        <p className="font-mono text-xs uppercase tracking-[0.18em] text-smoke">Opening PrepLoop</p>
+      </div>
+    );
   }
 
-  return !loading ? (
-    <div className='min-h-screen flex flex-wrap content-between bg-gray-400'>
-      <div className='w-full block'>
-        <Header />
-        <main>
-        <Outlet />
-        </main>
-        <Footer />
-      </div>
-    </div>
-  ) : null
+  return (
+    <ToastProvider>
+      <Outlet />
+    </ToastProvider>
+  );
 }
-
-export default App;
